@@ -86,6 +86,3 @@ This project is open-source and available under the **MIT License**.
 If you like this project, consider giving it a ⭐ on GitHub! 😊  
 
 ---
-```
-
-This will give your project a clean, professional-looking README on GitHub. 🚀 Let me know if you need any modifications!
