@@ -2,102 +2,291 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Weather App</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .card {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            border-color: #333;
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .input-group .form-control {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+            border-color: #444;
+        }
+        
+        .input-group .form-control:focus {
+            background-color: #2d2d2d;
+            border-color: #BB86FC;
+            box-shadow: 0 0 0 0.2rem rgba(187, 134, 252, 0.25);
+        }
+        
+        .sidebar {
+            height: 100vh;
+            background-color: #1e1e1e;
+            border-right: 1px solid #333;
+            position: fixed;
+            width: 25%;
+        }
+        
+        .city-item {
+            padding: 15px;
+            border-bottom: 1px solid #333;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        #map {
+            height: 400px;
+            width: 100%;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #333;
+            background: #2d2d2d;
+        }
+        
+        .weather-icon {
+            width: 50px;
+            height: 50px;
+            margin-right: 10px;
+        }
+        
+        .loading-spinner {
+            display: none;
+            margin: 0 auto;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+            }
+            .main-content {
+                padding-top: 20px;
+            }
+        }
+    </style>
 </head>
-<body class="bg-light">
-    <div class="container py-5">
-        <h1 class="text-center mb-4">Real-Time Weather App</h1>
-
-        <!-- Search Form -->
-        <div class="row justify-content-center mb-4">
-            <div class="col-12 col-sm-8 col-md-6">
-                <div class="input-group">
-                    <input type="text" id="cityInput" class="form-control" placeholder="Enter city name" />
-                    <button id="searchBtn" class="btn btn-primary">Search</button>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-3 sidebar pt-4">
+                <h2 class="mb-4 text-center">Top Cities</h2>
+                <div id="popularCities">
+                    <div class="city-item" data-city="Delhi">Delhi</div>
+                    <div class="city-item" data-city="Paris">Paris</div>
+                    <div class="city-item" data-city="London">London</div>
+                    <div class="city-item" data-city="New York">New York</div>
+                    <div class="city-item" data-city="Los Angeles">Los Angeles</div>
                 </div>
             </div>
-        </div>
+            
+            <div class="col-md-9 py-5 main-content" style="margin-left: 25%;">
+                <h1 class="text-center mb-4">Real-Time Weather</h1>
 
-        <!-- Weather Display -->
-        <div class="row justify-content-center">
-            <div class="col-12 col-sm-8 col-md-6">
-                <div id="weatherCard" class="card d-none">
-                    <div class="card-body">
-                        <h3 id="cityName" class="card-title"></h3>
-                        <p id="description" class="card-text text-muted"></p>
-                        <hr />
-                        <div class="row">
-                            <div class="col">
-                                <h4 id="temperature"></h4>
-                                <small>Temperature</small>
-                            </div>
-                            <div class="col">
-                                <h4 id="humidity"></h4>
-                                <small>Humidity</small>
-                            </div>
+                <div class="row justify-content-center mb-4">
+                    <div class="col-12 col-md-10">
+                        <div class="input-group">
+                            <input type="text" id="cityInput" class="form-control" placeholder="Enter city name " />
+                            <input type="int" id="cityInput" class="form-control" placeholder="Pincode " />
+                            <button id="searchBtn" class="btn btn-primary">Search</button>
                         </div>
-                        <hr />
-                        <div class="row">
-                            <div class="col">
-                                <h4 id="wind"></h4>
-                                <small>Wind Speed</small>
-                            </div>
-                            <div class="col">
-                                <h4 id="conditions"></h4>
-                                <small>Conditions</small>
+                    </div>
+                </div>
+
+                <div class="row justify-content-center mb-4">
+                    <div class="col-12 col-md-10">
+                        <div id="map"></div>
+                    </div>
+                </div>
+
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-10">
+                        <div class="spinner-border loading-spinner" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div id="weatherCard" class="card d-none">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <img id="weatherIcon" class="weather-icon" alt="Weather Icon" />
+                                    <div>
+                                        <h3 id="cityName" class="card-title mb-0"></h3>
+                                        <p id="description" class="card-text text-muted mb-0"></p>
+                                    </div>
+                                </div>
+                                <hr />
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <h4 id="temperature"></h4>
+                                        <small>Temperature</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <h4 id="feelsLike"></h4>
+                                        <small>Feels Like</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <h4 id="humidity"></h4>
+                                        <small>Humidity</small>
+                                    </div>
+                                </div>
+                                <hr />
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <h4 id="wind"></h4>
+                                        <small>Wind Speed</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <h4 id="pressure"></h4>
+                                        <small>Pressure</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <h4 id="visibility"></h4>
+                                        <small>Visibility</small>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div> 
+    </div>
 
-    <!-- jQuery, Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 
     <script>
+        let map, marker;
+        const apiKey = "0c20c5cef45cf7bf2bb58fe83972ec8a"; // Add your API key here
+        
         $(document).ready(function() {
-            $("#searchBtn").click(function() {
-                const city = $("#cityInput").val().trim();
-                if (city) {
-                    fetchWeather(city);
-                } else {
-                    alert("Please enter a city name");
-                }
-            });
+            initMap();
+            checkGeoLocation();
 
-            // Press Enter to search
+            $("#searchBtn").click(searchWeather);
             $("#cityInput").keypress(function(e) {
-                if (e.which === 13) {
-                    $("#searchBtn").click();
-                }
+                if (e.which === 13) searchWeather();
+            });
+            
+            $(".city-item").click(function() {
+                const city = $(this).data("city");
+                $("#cityInput").val(city);
+                searchWeather();
             });
         });
 
-        function fetchWeather(city) {
-            const url = `http://localhost:3000/weather?city=${encodeURIComponent(city)}`;
+        function initMap() {
+            map = L.map('map').setView([20, 0], 2);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap © CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map);
 
+            map.on('click', function(e) {
+                fetchWeatherByCoords(e.latlng.lat, e.latlng.lng);
+            });
+        }
+
+        function searchWeather() {
+            const city = $("#cityInput").val().trim();
+            if (city) {
+                showLoading();
+                fetchWeather(city);
+            } else {
+                showError("Please enter a city name");
+            }
+        }
+
+        function fetchWeather(city) {
+            const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`;
+            fetchWeatherData(url);
+        }
+
+        function fetchWeatherByCoords(lat, lon) {
+            showLoading();
+            const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+            fetchWeatherData(url);
+        }
+
+        function fetchWeatherData(url) {
             $.ajax({
                 url: url,
                 method: "GET",
                 success: function(data) {
-                    $("#weatherCard").removeClass("d-none");
-
-                    $("#cityName").text(data.name);
-                    $("#description").text(`(${data.weather[0].description})`);
-                    $("#temperature").text(`${data.main.temp} °C`);
-                    $("#humidity").text(`${data.main.humidity}%`);
-                    $("#wind").text(`${data.wind.speed} m/s`);
-                    $("#conditions").text(data.weather[0].main);
+                    displayWeatherData(data);
+                    updateMapLocation(data.coord.lat, data.coord.lon, data.name);
+                    hideLoading();
                 },
                 error: function(err) {
-                    alert("City not found. Please enter a valid city name.");
+                    hideLoading();
+                    showError("City not found or API error occurred");
                     console.error(err);
                 }
             });
+        }
+
+        function displayWeatherData(data) {
+            $("#weatherCard").removeClass("d-none");
+            $("#cityName").text(`${data.name}, ${data.sys.country}`);
+            $("#description").text(data.weather[0].description);
+            $("#weatherIcon").attr("src", `http://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`);
+            $("#temperature").text(`${Math.round(data.main.temp)}°C`);
+            $("#feelsLike").text(`${Math.round(data.main.feels_like)}°C`);
+            $("#humidity").text(`${data.main.humidity}%`);
+            $("#wind").text(`${data.wind.speed} m/s`);
+            $("#pressure").text(`${data.main.pressure} hPa`);
+            $("#visibility").text(`${(data.visibility / 1000).toFixed(1)} km`);
+        }
+
+        function updateMapLocation(lat, lon, name) {
+            map.setView([lat, lon], 10);
+            if (marker) map.removeLayer(marker);
+            marker = L.marker([lat, lon])
+                .addTo(map)
+                .bindPopup(`<b>${name}</b><br>Click map for weather`)
+                .openPopup();
+        }
+
+        function showLoading() {
+            $(".loading-spinner").show();
+            $("#weatherCard").addClass("d-none");
+        }
+
+        function hideLoading() {
+            $(".loading-spinner").hide();
+        }
+
+        function showError(message) {
+            alert(message);
+        }
+
+        function checkGeoLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        fetchWeatherByCoords(position.coords.latitude, position.coords.longitude);
+                    },
+                    () => console.log("Geolocation permission denied")
+                );
+            }
         }
     </script>
 </body>
