@@ -1,293 +1,427 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Weather App</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
-    <style>
-        body {
-            background-color: #121212;
-            color: #e0e0e0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .card {
-            background-color: #1e1e1e;
-            color: #e0e0e0;
-            border-color: #333;
-            transition: transform 0.2s;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .input-group .form-control {
-            background-color: #2d2d2d;
-            color: #e0e0e0;
-            border-color: #444;
-        }
-        
-        .input-group .form-control:focus {
-            background-color: #2d2d2d;
-            border-color: #BB86FC;
-            box-shadow: 0 0 0 0.2rem rgba(187, 134, 252, 0.25);
-        }
-        
-        .sidebar {
-            height: 100vh;
-            background-color: #1e1e1e;
-            border-right: 1px solid #333;
-            position: fixed;
-            width: 25%;
-        }
-        
-        .city-item {
-            padding: 15px;
-            border-bottom: 1px solid #333;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        
-        #map {
-            height: 400px;
-            width: 100%;
-            margin-bottom: 20px;
-            border-radius: 5px;
-            border: 1px solid #333;
-            background: #2d2d2d;
-        }
-        
-        .weather-icon {
-            width: 50px;
-            height: 50px;
-            margin-right: 10px;
-        }
-        
-        .loading-spinner {
-            display: none;
-            margin: 0 auto;
-        }
-        
-        @media (max-width: 768px) {
-            .sidebar {
-                position: relative;
-                width: 100%;
-                height: auto;
-            }
-            .main-content {
-                padding-top: 20px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weather App</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" />
+  <style>
+    body {
+      background: #121212;
+      color: #e0e0e0;
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    
+    /* SVG Cloud Animation */
+    .clouds-svg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 200%;
+      height: 100%;
+      animation: moveClouds 60s linear infinite;
+      z-index: -1;
+    }
+    
+    @keyframes moveClouds {
+      from {
+        transform: translateX(0);
+      }
+      to {
+        transform: translateX(-50%);
+      }
+    }
+    
+    .container-fluid {
+      padding: 0;
+    }
+    
+    /* Improved Top Cities Sidebar */
+    .sidebar {
+      height: 100vh;
+      background: linear-gradient(180deg, #1e1e1e 0%, #121212 100%);
+      border-right: 1px solid #333;
+      position: fixed;
+      width: 25%;
+      padding: 20px 10px;
+      overflow-y: auto;
+    }
+    
+    .sidebar h2 {
+      font-weight: 500;
+      margin-bottom: 20px;
+      text-align: center;
+      border-bottom: 1px solid #444;
+      padding-bottom: 10px;
+    }
+    
+    .city-item {
+      padding: 12px 15px;
+      margin: 8px 0;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+    
+    .city-item:hover {
+      background: #2a2a2a;
+      transform: translateX(5px);
+    }
+    
+    .main-content {
+      margin-left: 25%;
+      padding: 40px;
+    }
+    
+    h1 {
+      font-weight: 500;
+    }
+    
+    .input-group .form-control {
+      background-color: #2d2d2d;
+      color: #e0e0e0;
+      border-color: #444;
+    }
+    
+    .input-group .form-control:focus {
+      background-color: #2d2d2d;
+      border-color: #BB86FC;
+      box-shadow: 0 0 0 0.2rem rgba(187, 134, 252, 0.25);
+    }
+    
+    .btn-primary {
+      background-color: #BB86FC;
+      border: none;
+    }
+    
+    .btn-primary:hover {
+      background-color: #9a67ea;
+    }
+    
+    #map {
+      height: 400px;
+      width: 100%;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      border: 1px solid #333;
+      background: #2d2d2d;
+    }
+    
+    .card {
+      background-color: #1e1e1e;
+      color: #e0e0e0;
+      border-color: #333;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.7);
+    }
+    
+    .weather-icon {
+      width: 50px;
+      height: 50px;
+      margin-right: 10px;
+    }
+    
+    .loading-spinner {
+      display: none;
+      margin: 0 auto;
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+      }
+      .main-content {
+        margin-left: 0;
+        padding-top: 20px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-3 sidebar pt-4">
-                <h2 class="mb-4 text-center">Top Cities</h2>
-                <div id="popularCities">
-                    <div class="city-item" data-city="Delhi">Delhi</div>
-                    <div class="city-item" data-city="Paris">Paris</div>
-                    <div class="city-item" data-city="London">London</div>
-                    <div class="city-item" data-city="New York">New York</div>
-                    <div class="city-item" data-city="Los Angeles">Los Angeles</div>
-                </div>
-            </div>
-            
-            <div class="col-md-9 py-5 main-content" style="margin-left: 25%;">
-                <h1 class="text-center mb-4">Real-Time Weather</h1>
+  <!-- SVG Clouds -->
+  <svg class="clouds-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3840 1080" preserveAspectRatio="xMinYMin slice">
+    <!-- Cloud Group 1 -->
+    <g fill="#ffffff" opacity="0.8">
+      <circle cx="200" cy="200" r="60"></circle>
+      <circle cx="260" cy="200" r="50"></circle>
+      <circle cx="230" cy="170" r="50"></circle>
+      <circle cx="190" cy="250" r="40"></circle>
+      <circle cx="270" cy="230" r="30"></circle>
+    </g>
+    <!-- Cloud Group 2 -->
+    <g fill="#ffffff" opacity="0.7">
+      <circle cx="800" cy="300" r="80"></circle>
+      <circle cx="870" cy="300" r="70"></circle>
+      <circle cx="840" cy="260" r="60"></circle>
+      <circle cx="820" cy="340" r="50"></circle>
+      <circle cx="880" cy="330" r="40"></circle>
+    </g>
+    <!-- Cloud Group 3 -->
+    <g fill="#ffffff" opacity="0.6">
+      <circle cx="1400" cy="150" r="70"></circle>
+      <circle cx="1470" cy="150" r="60"></circle>
+      <circle cx="1440" cy="120" r="50"></circle>
+      <circle cx="1420" cy="190" r="40"></circle>
+      <circle cx="1480" cy="170" r="30"></circle>
+    </g>
+    <!-- Cloud Group 4 -->
+    <g fill="#ffffff" opacity="0.8">
+      <circle cx="2000" cy="400" r="90"></circle>
+      <circle cx="2070" cy="400" r="80"></circle>
+      <circle cx="2040" cy="360" r="70"></circle>
+      <circle cx="2020" cy="440" r="60"></circle>
+      <circle cx="2080" cy="430" r="50"></circle>
+    </g>
+    <!-- Cloud Group 5 -->
+    <g fill="#ffffff" opacity="0.7">
+      <circle cx="2700" cy="250" r="80"></circle>
+      <circle cx="2770" cy="250" r="70"></circle>
+      <circle cx="2740" cy="220" r="60"></circle>
+      <circle cx="2720" cy="290" r="50"></circle>
+      <circle cx="2780" cy="270" r="40"></circle>
+    </g>
+    <!-- Cloud Group 6 -->
+    <g fill="#ffffff" opacity="0.6">
+      <circle cx="3400" cy="100" r="70"></circle>
+      <circle cx="3470" cy="100" r="60"></circle>
+      <circle cx="3440" cy="80" r="50"></circle>
+      <circle cx="3420" cy="140" r="40"></circle>
+      <circle cx="3480" cy="120" r="30"></circle>
+    </g>
+    <!-- Additional Cloud Group 7 -->
+    <g fill="#ffffff" opacity="0.5">
+      <circle cx="500" cy="500" r="100"></circle>
+      <circle cx="600" cy="500" r="80"></circle>
+      <circle cx="550" cy="450" r="70"></circle>
+      <circle cx="520" cy="550" r="60"></circle>
+      <circle cx="630" cy="530" r="50"></circle>
+    </g>
+    <!-- Additional Cloud Group 8 -->
+    <g fill="#ffffff" opacity="0.5">
+      <circle cx="2500" cy="600" r="90"></circle>
+      <circle cx="2600" cy="600" r="70"></circle>
+      <circle cx="2550" cy="560" r="60"></circle>
+      <circle cx="2480" cy="640" r="50"></circle>
+      <circle cx="2630" cy="620" r="40"></circle>
+    </g>
+  </svg>
 
-                <div class="row justify-content-center mb-4">
-                    <div class="col-12 col-md-10">
-                        <div class="input-group">
-                            <input type="text" id="cityInput" class="form-control" placeholder="Enter city name " />
-                            <input type="int" id="cityInput" class="form-control" placeholder="Pincode " />
-                            <button id="searchBtn" class="btn btn-primary">Search</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row justify-content-center mb-4">
-                    <div class="col-12 col-md-10">
-                        <div id="map"></div>
-                    </div>
-                </div>
-
-                <div class="row justify-content-center">
-                    <div class="col-12 col-md-10">
-                        <div class="spinner-border loading-spinner" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <div id="weatherCard" class="card d-none">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center">
-                                    <img id="weatherIcon" class="weather-icon" alt="Weather Icon" />
-                                    <div>
-                                        <h3 id="cityName" class="card-title mb-0"></h3>
-                                        <p id="description" class="card-text text-muted mb-0"></p>
-                                    </div>
-                                </div>
-                                <hr />
-                                <div class="row text-center">
-                                    <div class="col-4">
-                                        <h4 id="temperature"></h4>
-                                        <small>Temperature</small>
-                                    </div>
-                                    <div class="col-4">
-                                        <h4 id="feelsLike"></h4>
-                                        <small>Feels Like</small>
-                                    </div>
-                                    <div class="col-4">
-                                        <h4 id="humidity"></h4>
-                                        <small>Humidity</small>
-                                    </div>
-                                </div>
-                                <hr />
-                                <div class="row text-center">
-                                    <div class="col-4">
-                                        <h4 id="wind"></h4>
-                                        <small>Wind Speed</small>
-                                    </div>
-                                    <div class="col-4">
-                                        <h4 id="pressure"></h4>
-                                        <small>Pressure</small>
-                                    </div>
-                                    <div class="col-4">
-                                        <h4 id="visibility"></h4>
-                                        <small>Visibility</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-3 sidebar">
+        <h2>Top Cities</h2>
+        <div id="popularCities">
+          <div class="city-item" data-city="Delhi">Delhi</div>
+          <div class="city-item" data-city="Paris">Paris</div>
+          <div class="city-item" data-city="London">London</div>
+          <div class="city-item" data-city="New York">New York</div>
+          <div class="city-item" data-city="Los Angeles">Los Angeles</div>
         </div>
+      </div>
+      
+      <div class="col-md-9 main-content">
+        <h1 class="text-center mb-4">Real-Time Weather</h1>
+        <div class="row justify-content-center mb-4">
+          <div class="col-12 col-md-10">
+            <div class="input-group">
+              <input type="text" id="cityInput" class="form-control" placeholder="Enter city name" />
+              <input type="text" id="pincodeInput" class="form-control" placeholder="Pincode" />
+              <button id="searchBtn" class="btn btn-primary">Search</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row justify-content-center mb-4">
+          <div class="col-12 col-md-10">
+            <div id="map"></div>
+          </div>
+        </div>
+
+        <div class="row justify-content-center">
+          <div class="col-12 col-md-10">
+            <div class="spinner-border loading-spinner" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <div id="weatherCard" class="card d-none">
+              <div class="card-body">
+                <div class="d-flex align-items-center">
+                  <img id="weatherIcon" class="weather-icon" alt="Weather Icon" />
+                  <div>
+                    <h3 id="cityName" class="card-title mb-0"></h3>
+                    <p id="description" class="card-text text-muted mb-0"></p>
+                  </div>
+                </div>
+                <hr />
+                <div class="row text-center">
+                  <div class="col-4">
+                    <h4 id="temperature"></h4>
+                    <small>Temperature</small>
+                  </div>
+                  <div class="col-4">
+                    <h4 id="feelsLike"></h4>
+                    <small>Feels Like</small>
+                  </div>
+                  <div class="col-4">
+                    <h4 id="humidity"></h4>
+                    <small>Humidity</small>
+                  </div>
+                </div>
+                <hr />
+                <div class="row text-center">
+                  <div class="col-4">
+                    <h4 id="wind"></h4>
+                    <small>Wind Speed</small>
+                  </div>
+                  <div class="col-4">
+                    <h4 id="pressure"></h4>
+                    <small>Pressure</small>
+                  </div>
+                  <div class="col-4">
+                    <h4 id="visibility"></h4>
+                    <small>Visibility</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div> <!-- main-content -->
     </div>
+  </div>
 
-    <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  
+  <script>
+    let map, marker;
+    const apiKey = "0c20c5cef45cf7bf2bb58fe83972ec8a"; // Add your API key here
 
-    <script>
-        let map, marker;
-        const apiKey = "0c20c5cef45cf7bf2bb58fe83972ec8a"; // Add your API key here
-        
-        $(document).ready(function() {
-            initMap();
-            checkGeoLocation();
+    $(document).ready(function() {
+      initMap();
+      checkGeoLocation();
 
-            $("#searchBtn").click(searchWeather);
-            $("#cityInput").keypress(function(e) {
-                if (e.which === 13) searchWeather();
-            });
-            
-            $(".city-item").click(function() {
-                const city = $(this).data("city");
-                $("#cityInput").val(city);
-                searchWeather();
-            });
-        });
+      $("#searchBtn").click(searchWeather);
+      $("#cityInput").keypress(function(e) {
+        if (e.which === 13) searchWeather();
+      });
+      
+      $(".city-item").click(function() {
+        const city = $(this).data("city");
+        $("#cityInput").val(city);
+        searchWeather();
+      });
+    });
 
-        function initMap() {
-            map = L.map('map').setView([20, 0], 2);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '© OpenStreetMap © CARTO',
-                subdomains: 'abcd',
-                maxZoom: 19
-            }).addTo(map);
+    function initMap() {
+      map = L.map('map').setView([20, 0], 2);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap © CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19
+      }).addTo(map);
 
-            map.on('click', function(e) {
-                fetchWeatherByCoords(e.latlng.lat, e.latlng.lng);
-            });
+      map.on('click', function(e) {
+        fetchWeatherByCoords(e.latlng.lat, e.latlng.lng);
+      });
+    }
+
+    function searchWeather() {
+      const city = $("#cityInput").val().trim();
+      if (city) {
+        showLoading();
+        fetchWeather(city);
+      } else {
+        showError("Please enter a city name");
+      }
+    }
+
+    function fetchWeather(city) {
+      const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`;
+      fetchWeatherData(url);
+    }
+
+    function fetchWeatherByCoords(lat, lon) {
+      showLoading();
+      const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+      fetchWeatherData(url);
+    }
+
+    function fetchWeatherData(url) {
+      $.ajax({
+        url: url,
+        method: "GET",
+        success: function(data) {
+          displayWeatherData(data);
+          updateMapLocation(data.coord.lat, data.coord.lon, data.name);
+          hideLoading();
+        },
+        error: function(err) {
+          hideLoading();
+          showError("City not found or API error occurred");
+          console.error(err);
         }
+      });
+    }
 
-        function searchWeather() {
-            const city = $("#cityInput").val().trim();
-            if (city) {
-                showLoading();
-                fetchWeather(city);
-            } else {
-                showError("Please enter a city name");
-            }
-        }
+    function displayWeatherData(data) {
+      $("#weatherCard").removeClass("d-none");
+      $("#cityName").text(`${data.name}, ${data.sys.country}`);
+      $("#description").text(data.weather[0].description);
+      $("#weatherIcon").attr("src", `http://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`);
+      $("#temperature").text(`${Math.round(data.main.temp)}°C`);
+      $("#feelsLike").text(`${Math.round(data.main.feels_like)}°C`);
+      $("#humidity").text(`${data.main.humidity}%`);
+      $("#wind").text(`${data.wind.speed} m/s`);
+      $("#pressure").text(`${data.main.pressure} hPa`);
+      $("#visibility").text(`${(data.visibility / 1000).toFixed(1)} km`);
+    }
 
-        function fetchWeather(city) {
-            const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`;
-            fetchWeatherData(url);
-        }
+    function updateMapLocation(lat, lon, name) {
+      map.setView([lat, lon], 10);
+      if (marker) map.removeLayer(marker);
+      marker = L.marker([lat, lon])
+        .addTo(map)
+        .bindPopup(`<b>${name}</b><br>Click map for weather`)
+        .openPopup();
+    }
 
-        function fetchWeatherByCoords(lat, lon) {
-            showLoading();
-            const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
-            fetchWeatherData(url);
-        }
+    function showLoading() {
+      $(".loading-spinner").show();
+      $("#weatherCard").addClass("d-none");
+    }
 
-        function fetchWeatherData(url) {
-            $.ajax({
-                url: url,
-                method: "GET",
-                success: function(data) {
-                    displayWeatherData(data);
-                    updateMapLocation(data.coord.lat, data.coord.lon, data.name);
-                    hideLoading();
-                },
-                error: function(err) {
-                    hideLoading();
-                    showError("City not found or API error occurred");
-                    console.error(err);
-                }
-            });
-        }
+    function hideLoading() {
+      $(".loading-spinner").hide();
+    }
 
-        function displayWeatherData(data) {
-            $("#weatherCard").removeClass("d-none");
-            $("#cityName").text(`${data.name}, ${data.sys.country}`);
-            $("#description").text(data.weather[0].description);
-            $("#weatherIcon").attr("src", `http://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`);
-            $("#temperature").text(`${Math.round(data.main.temp)}°C`);
-            $("#feelsLike").text(`${Math.round(data.main.feels_like)}°C`);
-            $("#humidity").text(`${data.main.humidity}%`);
-            $("#wind").text(`${data.wind.speed} m/s`);
-            $("#pressure").text(`${data.main.pressure} hPa`);
-            $("#visibility").text(`${(data.visibility / 1000).toFixed(1)} km`);
-        }
+    function showError(message) {
+      alert(message);
+    }
 
-        function updateMapLocation(lat, lon, name) {
-            map.setView([lat, lon], 10);
-            if (marker) map.removeLayer(marker);
-            marker = L.marker([lat, lon])
-                .addTo(map)
-                .bindPopup(`<b>${name}</b><br>Click map for weather`)
-                .openPopup();
-        }
-
-        function showLoading() {
-            $(".loading-spinner").show();
-            $("#weatherCard").addClass("d-none");
-        }
-
-        function hideLoading() {
-            $(".loading-spinner").hide();
-        }
-
-        function showError(message) {
-            alert(message);
-        }
-
-        function checkGeoLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    position => {
-                        fetchWeatherByCoords(position.coords.latitude, position.coords.longitude);
-                    },
-                    () => console.log("Geolocation permission denied")
-                );
-            }
-        }
-    </script>
+    function checkGeoLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            fetchWeatherByCoords(position.coords.latitude, position.coords.longitude);
+          },
+          () => console.log("Geolocation permission denied")
+        );
+      }
+    }
+  </script>
 </body>
 </html>
